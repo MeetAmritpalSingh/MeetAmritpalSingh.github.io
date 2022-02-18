@@ -2,33 +2,165 @@
 <html lang="en" dir="ltr">
   <head>
     <meta charset="utf-8">
-    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap.min.css">
-    <link rel="stylesheet" href="GoogleStyleSheet.css">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Google Search</title>
+    <title>Score Generator</title>
+	
+	<style>
+	.grid-container {
+	  display: grid;
+	  grid-template-columns: 33% 33% 33%;
+	  background-color: #2196F3;
+	  padding: 10px;
+	}
+	.grid-item {
+	  background-color: rgba(255, 255, 255, 0.8);
+	  border: 1px solid rgba(0, 0, 0, 0.8);
+	  padding: 0px;
+	  font-size: 15px;
+	  text-align: center;
+	}
+	.centerButton {
+		font-size: 20px;
+	}
+	</style>
   </head>
   <body>
-      <div>
-          <nav class="navbar">
-            <div>
-              <ul class="nav navbar-nav navbar-right">
-                <li><a href="GoogleImageSearch.html">Image Search</a></li>
-                <li><a href="GoogleAdvancedSearch.html">Advanced Search</a></li>
-              </ul>
-            </div>
-          </nav>
+	<h1 align="center">Score Calculator</h1>
+	<div align="center">
+	<button class="centerButton" type="button" name="Compute">Compute</button>
+	</div>
+	<br><br><br>
+    <div class="grid-container">
+	  <div class="grid-item">
+		<h3 class="headerStyle">Enter Patent and application numbers in ranked order</h3><br>
+		<textarea id="textarea1" name="EnterStrings" rows="30" cols="40"></textarea>
+	  </div>
+	  
+	  <div class="grid-item">
+		<h3 class="headerStyle">Enter Exported Search history</h3>
+		<br>
+		<textarea id="textarea2" name="EnterStrings" rows="30" cols="40"></textarea>
+	  </div>
+	  <div class="grid-item">
+		<h3 class="headerStyle">Output</h3><br>
+		<textarea id="textarea3" name="EnterStrings" rows="30" cols="40"></textarea>
+	  </div> 
+	</div>
+	
+    <script type="text/javascript">
+      
+	  var button = document.querySelector('button');
 
-          <div class="container" align="center">
-            <img src="https://www.google.com/images/branding/googlelogo/2x/googlelogo_color_272x92dp.png" alt="OOPSY!!! something is fishy here" width="300" height="100"><br>
-              <div class="form-group">
-                <form action="https://google.com/search">
-                  <input id="SearchBar" type="text" name="q"><br>
-                  <input Class="SearchButton" type="submit" value="Search">
-                  <input Class="SearchButton" value="I'm Feeling Lucky" aria-label="I'm Feeling Lucky" id="lucky" name="btnI" type="submit">
-                </form>
-              </div>
-          </div>
-      </div>
 
+      button.onclick = function() {
+        var Std_App_no = document.querySelectorAll('textarea')[0].value;
+		var rel_history = document.querySelectorAll('textarea')[1].value;
+		
+		ActualScoreMapping(Process_App_no(Std_App_no), Process_History(rel_history));
+		
+		
+      }
+
+
+      function Process_App_no(Std_App_no) {
+		var AppNo_Array = Std_App_no.split("\n");
+		var UniqueAppNo = [];
+		
+		for (i=0;i<=AppNo_Array.length-1; i++) 
+		{
+			if ((UniqueAppNo.includes(AppNo_Array[i])) || (AppNo_Array[i]=='')) {
+				continue;
+			}
+			else {
+				UniqueAppNo.push(AppNo_Array[i]);
+			}
+			
+		}
+		alert("Unique values are " + UniqueAppNo.length);
+		
+		
+		for (j=0;j<=UniqueAppNo.length-1; j++) {
+			UniqueAppNo[j]=UniqueAppNo[j]+"@"+(j+1)+"@ ";
+		}
+		UniqueAppNo_withSno = UniqueAppNo.map(row1 =>row1.split("@"));
+		return UniqueAppNo_withSno;
+	  }
+	  
+	function Process_History(rel_history) {
+	  
+		var HistoryMatrix = rel_history.split("\n").map(row => row.split("	"));
+		HistoryMatrix.sort(function (a,b) {
+			return a[0]-b[0];
+		
+		});
+		
+		HistoryMatrixSanitized = [];
+				
+		for (k=0;k<=HistoryMatrix.length-1;k++) {
+			
+			if (HistoryMatrix[k]=='') {
+				continue;
+			} 
+			else if (HistoryMatrix[k][2].includes("$SEL")){
+				HistoryMatrixSanitized.push(HistoryMatrix[k]);
+			}
+		}
+		
+		for (l=0;l<=HistoryMatrixSanitized.length-1;l++) {
+			HistoryMatrixSanitized[l][3]=100-l;
+		}
+		
+		
+		return HistoryMatrixSanitized;
+		}
+	
+	function ActualScoreMapping(UniqueAppNo_withSno, HistoryMatrixSanitized) {
+		console.log(UniqueAppNo_withSno);
+		
+		Temp_HistoryMatrix =[];
+		Temp_HistoryMatrix_UniqueHits = [];
+		for (m=0; m<=HistoryMatrixSanitized.length-1;m++) {	
+		
+			if (Temp_HistoryMatrix.includes(HistoryMatrixSanitized[m][1])) {
+				continue;	
+			} 
+			
+			else {
+				Temp_HistoryMatrix.push(HistoryMatrixSanitized[m][1]);
+				Temp_HistoryMatrix_UniqueHits.push(HistoryMatrixSanitized[m][1]+"@"+HistoryMatrixSanitized[m][3]);
+			
+			}
+		}
+
+		HistoryMatrix_uniqueHits=Temp_HistoryMatrix_UniqueHits.map(row2 => row2.split("@"));
+	
+		console.log(HistoryMatrix_uniqueHits);
+		
+		for(n=0;n<=UniqueAppNo_withSno.length-1;n++) {
+			
+			for (o=0;o<=HistoryMatrix_uniqueHits.length-1;o++) {
+				
+				if(UniqueAppNo_withSno[n][1]==HistoryMatrix_uniqueHits[o][0]) {
+					UniqueAppNo_withSno[n][2]=HistoryMatrix_uniqueHits[o][1];
+				}
+			
+			}
+			
+		}		
+		
+		for (p=UniqueAppNo_withSno.length-1;p==0;p--) {
+			
+			if (UniqueAppNo_withSno[p][2]!=" " && UniqueAppNo_withSno[p-1][2]!=" ") {
+				continue;
+			}
+			
+			else {
+				
+			}
+			
+		}
+		console.log(UniqueAppNo_withSno);
+	}
+		
+    </script>
   </body>
 </html>
