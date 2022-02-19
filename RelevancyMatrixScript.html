@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+  <head>
+    <meta charset="utf-8">
+    <title>Script creator</title>
+	<link rel="stylesheet" href="CustomToolsStyleSheet.css">
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css" integrity="sha384-Vkoo8x4CGsO3+Hhxv8T/Q5PaXtkKtu6ug5TOeNV6gBiFeWPGFN9MuhOf23Q9Ifjh" crossorigin="anonymous">
+
+  </head>
+  <body>
+	<div class="topnav">
+	  <a href="index.html">Score Calculator</a>
+	  <a href="RelevancyScore1to100.html">Relevancy Score 1to100</a>
+	</div>
+    <div class="container" align="center" margin="auto">
+      <div class="jumbotron">
+        <h1>Relevancy Matrix Script Generator</h1>
+        <p><strong><span style="background-color:tomato"> Do not add extra breaks between the search strings</span></strong></p>
+        <textarea name="SearchStrings" rows="12" cols="110" placeholder="Enter Search Strings here" align="center" margin="auto"></textarea><br>
+        <form class="QueryScript"  method="get">
+          <div>
+            <table style="width:800px" margin="auto">
+                <tr>
+                    <td><input type="checkbox" id="V1" name="V1" value="95">
+                    <label for="V1">more than or equal to 95%</label></td>
+
+                    <td><input type="checkbox" id="V2" name="V2" value="90">
+                    <label for="V2">more than or equal to 90%</label></td>
+
+                    <td><input type="checkbox" id="V3" name="V3" value="85">
+                    <label for="V3">more than or equal to 85%</label></td>
+                </tr>
+
+                <tr>
+                  <td><input type="checkbox" id="V4" name="V4" value="80">
+                  <label for="V4">more than or equal to 80%</label></td>
+
+                  <td><input type="checkbox" id="V5" name="V5" value="75">
+                  <label for="V5">more than or equal to 75%</label></td>
+
+                  <td><input type="checkbox" id="V6" name="V6" value="70">
+                  <label for="V6">more than or equal to 70%</label></td>
+                </tr>
+
+                <tr>
+                  <td><input type="checkbox" id="V7" name="V7" value="65">
+                  <label for="V7">more than or equal to 65%</label></td>
+
+                  <td><input type="checkbox" id="V8" name="V8" value="60">
+                  <label for="V8">more than or equal to 60%</label></td>
+
+                  <td><input type="checkbox" id="V9" name="V9" value="59">
+                  <label for="V9">Less than 60%</label></td>
+                </tr>
+            </table>
+          </div>
+          <input type="button" id="Submit" name="Submit" value="Submit"><br>
+
+        </form>
+        <br>
+        <textarea disabled name="Output" rows="12" cols="110" placeholder="Output Script" style="display:none"></textarea><br>
+      </div>
+    </div>
+    <script>
+      var button = document.getElementById("Submit")
+      button.onclick = function (){
+        TextareaOutput();
+      }
+
+
+
+      function getStrings(){
+        var SearchStrings = document.querySelector("textarea").value;
+        var IndSearchStrings = SearchStrings.split('\n');
+        return   IndSearchStrings;
+      }
+
+      function getChecks(){
+        var V1 = document.getElementById("V1");
+        var V2 = document.getElementById("V2");
+        var V3 = document.getElementById("V3");
+        var V4 = document.getElementById("V4");
+        var V5 = document.getElementById("V5");
+        var V6 = document.getElementById("V6");
+        var V7 = document.getElementById("V7");
+        var V8 = document.getElementById("V8");
+        var V9 = document.getElementById("V9");
+        var v = [V1, V2, V3,V4,V5,V6,V7,V8,V9]
+        var SelectedChecks = [];
+        for (var i = 0; i < 9; i++) {
+          if (v[i].checked) {
+            SelectedChecks.push(v[i].value);
+          }
+        }
+      return SelectedChecks;
+      }
+
+      function GenerateScript(IndSearchStrings,SelectedChecks){
+        IndSearchStrings = getStrings();
+        SelectedChecks = getChecks();
+        var FinalScript="";
+        alert("Number of strings are " + IndSearchStrings.length + " and relevancy scores selected are " + SelectedChecks);
+        NumberOfSelectedCheckes = SelectedChecks.length;
+        var Matrix=[];
+        for (var j = 0; j < IndSearchStrings.length; j++) {
+          for (var i = 0; i < NumberOfSelectedCheckes; i++) {
+            if (SelectedChecks[i] == 59) {
+            var x = ((j+1) + " NOT ($SEL " + (j+1) + ", ($RK 0,60))" )
+            }
+            else {
+            var x = "($SEL " + (j+1) + ", ($RK 0," + SelectedChecks[i] + "))";
+            }
+            Matrix.push(x);
+          }
+        }
+
+      for (var k = 0; k < IndSearchStrings.length; k++) {
+        FinalScript = FinalScript + IndSearchStrings[k] + "\n";
+      }
+
+      for (var l = 0; l < Matrix.length; l++) {
+        FinalScript = FinalScript + Matrix[l] + "\n";
+      }
+      return FinalScript;
+      }
+
+
+
+      function TextareaOutput(){
+      var OutputTA = document.querySelectorAll("textarea")[1];
+      OutputTA.style.display="block";
+      OutputTA.value = GenerateScript();
+      }
+
+    </script>
+  </body>
+</html>
