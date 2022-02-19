@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+  <head>
+    <meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<link rel="stylesheet" href="CustomToolsStyleSheet.css">
+    <title>Score Generator</title>
+	
+  </head>
+  <body>
+	<div class="topnav">
+	  <a href="RelevancyScore1to100.html">Relevancy Score 1to100</a>
+	  <a href="RelevancyMatrixScript.html">Relevancy Matrix</a>
+
+	</div>
+	<h1 align="center">Score Calculator</h1>
+	<div align="center">
+	<button class="centerButton" type="button" name="Compute">Compute</button>
+	</div>
+	<br><br>
+    <div class="grid-container">
+	  <div class="grid-item">
+		<h3 class="headerStyle">Enter standardized application no. in ranked order</h3><br>
+		<textarea id="textarea1" name="EnterStrings" rows="30" cols="40"></textarea>
+	  </div>
+	  
+	  <div class="grid-item">
+		<h3 class="headerStyle">Enter Exported Search history</h3>
+		<br>
+		<textarea id="textarea2" name="EnterStrings" rows="30" cols="40"></textarea>
+	  </div>
+	  <div class="grid-item">
+		<h3 class="headerStyle">Final Results</h3><br>
+		<textarea disabled id="textarea3" name="EnterStrings" rows="30" cols="40"></textarea>
+	  </div> 
+	</div>
+	
+    <script type="text/javascript">
+      
+	  var button = document.querySelector('button');
+
+	// Logic to perform computation on clicking compute button
+	
+    button.onclick = function() {
+        var Std_App_no = document.querySelectorAll('textarea')[0].value;
+		var rel_history = document.querySelectorAll('textarea')[1].value;
+		
+		/* calling of main function to process standardized application numbers 
+		& search history, and generate final results 
+		
+		
+		*/
+		ActualScoreMapping(Process_App_no(Std_App_no), Process_History(rel_history));
+		
+		
+    }
+
+	// definition of a function to remove duplicate application no and assigning serial numbers
+	
+      function Process_App_no(Std_App_no) {
+	  
+		var AppNo_Array = Std_App_no.split("\n");
+		var UniqueAppNo = [];
+		
+	// For loop to retain only unique values	
+		for (i=0;i<=AppNo_Array.length-1; i++) 
+		{
+			if ((UniqueAppNo.includes(AppNo_Array[i])) || (AppNo_Array[i]=='')) {
+				continue;
+			}
+			else {
+				UniqueAppNo.push(AppNo_Array[i]);
+			}
+			
+		}
+		
+		alert("Total unique application numbers are " + UniqueAppNo.length);
+		
+	// For loop to assign serial numbers to application numbers
+	
+		for (j=0;j<=UniqueAppNo.length-1; j++) {
+			UniqueAppNo[j]=UniqueAppNo[j]+"@"+(j+1)+"@ ";
+		}
+		UniqueAppNo_withSno = UniqueAppNo.map(row1 =>row1.split("@"));
+		
+	// To return processed application numbers to be used by ActualScoreMapping function
+		
+		return UniqueAppNo_withSno;
+
+	  }
+
+	// definition of a funtion to process search history after executing script
+	
+	function Process_History(rel_history) {
+		
+	// converting history data into multidimensional array using split and map function
+		
+		var HistoryMatrix = rel_history.split("\n").map(row => row.split("	"));
+		
+	// sorting history data as per serial number of questel Orbit
+	
+		HistoryMatrix.sort(function (a,b) {
+			return a[0]-b[0];
+		
+		});
+		
+		HistoryMatrixSanitized = [];
+				
+	// For loop to capture only elements having relevancy score search history present
+	
+		for (k=0;k<=HistoryMatrix.length-1;k++) {
+			
+			if (HistoryMatrix[k]=='') {
+				
+				continue;
+			
+			} 
+			else if (HistoryMatrix[k][2].includes("$SEL")){
+				
+				HistoryMatrixSanitized.push(HistoryMatrix[k]);
+				
+			}
+		}
+
+	// Assigning percentage score in the search history
+	
+		for (l=0;l<=HistoryMatrixSanitized.length-1;l++) {
+			
+			HistoryMatrixSanitized[l][3]=100-l;
+		
+		}
+	
+	// To return processed search history to be used by ActualScoreMapping function 	
+	
+	return HistoryMatrixSanitized;
+		}
+	
+	/* definition of a main function to process standardized application numbers 
+		& search history, and generate final results	
+	*/
+	
+	function ActualScoreMapping(UniqueAppNo_withSno, HistoryMatrixSanitized) {
+		
+		
+		Temp_HistoryMatrix =[];
+		Temp_HistoryMatrix_UniqueHits = [];
+		
+	// For loop to retain only unique hits of application numbers with 	relevancy score wrt to those application numbers
+	
+		for (m=0; m<=HistoryMatrixSanitized.length-1;m++) {	
+		
+			if (Temp_HistoryMatrix.includes(HistoryMatrixSanitized[m][1])) {
+				continue;	
+			} 
+			
+			else {
+				Temp_HistoryMatrix.push(HistoryMatrixSanitized[m][1]);
+				Temp_HistoryMatrix_UniqueHits.push(HistoryMatrixSanitized[m][1]+"@"+HistoryMatrixSanitized[m][3]);
+			
+			}
+		}
+
+		HistoryMatrix_uniqueHits=Temp_HistoryMatrix_UniqueHits.map(row2 => row2.split("@"));
+	
+	// for loop to populate application numbers with matching search history counts
+	
+		for(n=0;n<=UniqueAppNo_withSno.length-1;n++) {
+			
+			for (o=0;o<=HistoryMatrix_uniqueHits.length-1;o++) {
+				
+				if (UniqueAppNo_withSno[n][1]==HistoryMatrix_uniqueHits[o][0]) {
+					UniqueAppNo_withSno[n][2]=HistoryMatrix_uniqueHits[o][1];
+				}
+			
+			}
+			
+		}		
+		
+		// for loop to fill the scores of missing application numbers from bottom to top
+		
+		for(p=1;p<=	UniqueAppNo_withSno.length-1;p++) {
+			
+			if (UniqueAppNo_withSno[UniqueAppNo_withSno.length-p][2] != " ") {
+				
+				if (UniqueAppNo_withSno[UniqueAppNo_withSno.length-p-1][2] === " ") {
+				
+					UniqueAppNo_withSno[UniqueAppNo_withSno.length-p-1][2] = UniqueAppNo_withSno[UniqueAppNo_withSno.length-p][2];
+				}
+			}		
+		}	
+		
+		var finaloutput="";
+		
+	//For loop to dispay final results in a third text area	
+	
+		for (q=0;q<=UniqueAppNo_withSno.length-1;q++) {
+		
+			finaloutput = finaloutput + UniqueAppNo_withSno[q][0] + "," + UniqueAppNo_withSno[q][1] + "," + UniqueAppNo_withSno[q][2] + "\n";
+		
+		}
+		
+		document.querySelectorAll('textarea')[2].value=finaloutput;
+		
+	}
+		
+    </script>
+  </body>
+</html>
