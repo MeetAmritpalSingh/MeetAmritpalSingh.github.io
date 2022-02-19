@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+  <head>
+    <meta charset="utf-8">
+    <title>Relevancy 1 to 100</title>
+	<link rel="stylesheet" href="CustomToolsStyleSheet.css">
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css" integrity="sha384-Vkoo8x4CGsO3+Hhxv8T/Q5PaXtkKtu6ug5TOeNV6gBiFeWPGFN9MuhOf23Q9Ifjh" crossorigin="anonymous">
+  </head>
+  <body>
+	<div class="topnav">
+	  <a href="index.html">Score Calculator</a>
+	  <a href="RelevancyMatrixScript.html">Relevancy Matrix</a>
+	</div>
+    <div class="container" margin="auto" align="center">
+      <div class="jumbotron">
+          <h1><strong>Relevancy Score Extraction</strong></h1>
+          <textarea name="SearchString" rows="8" cols="100" placeholder="Enter your Search String"></textarea><br>
+		  <br>
+          <form class="form-group" name="UserForm" method="get">
+              <input type="button" id="Submit" name="Submit" value="Submit">
+              <input type="button" id="copyToboard" name="CopyToClipboard" value="Copy To Clipboard">
+          </form>
+		
+          <textarea name="output" id="output1" rows="8" cols="100" disabled></textarea>
+      </div>
+    </div>
+    <script>
+    var button = document.getElementById('Submit')
+    button.onclick = function (){
+      OutputTextArea()
+    }
+
+    var C2B = document.getElementById('copyToboard')
+    C2B.onclick = function () {
+      copyToCboard()
+    }
+
+    function GetInputFromTextArea() {
+      return document.querySelector("textarea").value
+    }
+
+    function GenerateScriptComb() {
+    var Matrix=GetInputFromTextArea()
+    for (var i = 100; i >= 1; i--) {
+      Matrix+="\n($SEL 1, ($RK 0," + i + "))"
+      }
+    return Matrix
+    }
+
+    function OutputTextArea() {
+    var Output1= document.getElementById('output1')
+    Output1.value =GenerateScriptComb()
+    }
+
+    function copyToCboard(){
+      const textarea = document.createElement('textarea');
+      document.body.appendChild(textarea);
+      textarea.value = document.getElementById('output1').value;
+      textarea.select()
+      document.execCommand('copy');
+      document.body.removeChild(textarea);
+      alert("copied")
+    }
+
+    </script>
+  </body>
+</html>
