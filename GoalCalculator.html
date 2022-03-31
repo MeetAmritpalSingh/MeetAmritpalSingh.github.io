@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+  <head>
+    <meta charset="utf-8">	    
+	<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap.min.css">
+
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<link rel="stylesheet" href="CustomToolsStyleSheet.css">
+    <title>Calculate seed target</title>
+	
+  </head>
+  <body> 
+	<div class="topnav">
+	  <a href="RelevancyScore1to100.html">Relevancy Score 1to100</a>
+	  <a href="RelevancyMatrixScript.html">Relevancy Matrix</a>
+	  <a href="index.html">Score Calculator</a>
+	</div>
+		<div class="container">
+		<br><br>
+		<form action="" id="Form" class="formBody">
+			
+			<label> R/NR ratio of 10% set:</label>
+			<input type="text" id="R_estimate" name="R_estimate"><br><br>
+			
+			<label> # of seed patents already existing:</label>
+			<input type="text" id="N_existing" name="N_existing"><br><br>
+			
+			<input type="submit" id="submit" value="submit"><br><br>
+			
+			<label> Target # of seed patents:</label>
+			<input type="text" id="N_goal" name="N_goal"><br><br>
+			
+			<label> Estimated # of patents to be reviewed:</label>
+			<input type="text" id="N_Review" name="N_Review"><br><br>
+		
+		</form>
+		</div>	
+		<script>
+			var button = document.getElementById("submit")
+			button.onclick = () => {
+				var R_estimate = document.getElementById("R_estimate").value
+				var N_existing = document.getElementById("N_existing").value
+				if (R_estimate.length === 0 || N_existing.length === 0 || isNaN(R_estimate) || isNaN(N_existing)) {
+					alert("Please enter valid input")
+				} else {
+					
+					var N_goal = (600 * (Math.log2(1+parseInt(R_estimate)))) + 200
+					
+					if (N_goal > 1000) {
+						N_goal = 1000
+					}
+					
+					
+					var N_Review = ((N_goal - N_existing)/R_estimate)* (1+parseInt(R_estimate))
+					
+					if (N_Review <0) {
+						alert("No need to review more cases")
+					} else {
+						FillValues(R_estimate,N_existing,N_goal,N_Review)
+					}			
+				}
+			}
+			
+			FillValues = (R_estimate,N_existing,N_goal,N_Review) => {
+				document.getElementById("R_estimate").value = R_estimate;
+				document.getElementById("N_existing").value = N_existing;
+				document.getElementById("N_goal").value = N_goal;
+				document.getElementById("N_Review").value = N_Review;
+			}
+			
+			var form = document.getElementById("Form");
+			function handleForm(event) { event.preventDefault(); } 
+			form.addEventListener('submit', handleForm);
+
+		</script>
+	
+  </body>
+</html>
