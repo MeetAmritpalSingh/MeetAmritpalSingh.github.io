@@ -44,14 +44,14 @@
 					alert("Please enter valid input")
 				} else {
 					
-					var N_goal = (600 * (Math.log2(1+parseInt(R_estimate)))) + 200
+					var N_goal = (600 * (Math.log2(1+Number(R_estimate)))) + 200
 					
 					if (N_goal > 1000) {
 						N_goal = 1000
 					}
 					
 					
-					var N_Review = ((N_goal - N_existing)/R_estimate)* (1+parseInt(R_estimate))
+					var N_Review = ((N_goal - N_existing)/R_estimate)* (1+Number(R_estimate))
 					
 					if (N_Review <0) {
 						alert("No need to review more cases")
