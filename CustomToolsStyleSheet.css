@@ -37,3 +37,19 @@
 	  background-color: #ddd;
 	  color: black;
 	}
+	
+	
+	.formBody div{
+	  margin: 20px;
+	}
+
+	.formBody label{
+	  font-size: 15px;
+	  width: 400px;
+	}
+
+	.formBody input{
+	  border: 1px solid #e4e4e4;
+	  padding: 5px 10px;
+	  max-width: 500px;
+	  
