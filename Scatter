@@ -239,10 +239,10 @@
 				//Listening to point click events on each series data point
 				SeriesData.forEach(seriesno => {
 					seriesno.listen('pointClick', function(e){
-					const getX = e.iterator.get('x');
-					const getValue = e.iterator.get('value');
-					//calling Function to fetch patents as per selected coordinate value
-					FetchPatentNumbers(getX,getValue);
+						const getX = e.iterator.get('x');
+						const getValue = e.iterator.get('value');
+						//calling Function to fetch patents as per selected coordinate value
+						FetchPatentNumbers(getX,getValue);
 					});
 				});
 						  
@@ -261,25 +261,31 @@
 				//Waiting for draq button click event to annoate as per coordinates
 				const DrawButton = document.getElementById("annotate");
 				DrawButton.onclick = function(event) {
-					const StartX = document.getElementById("startingXcoordinate").value;
-					const StartY = document.getElementById("startingYcoordinate").value
-					const EndX = document.getElementById("endingXcoordinate").value;
-					const EndY = document.getElementById("endingYcoordinate").value;
-					const controller = chart.annotations();					
-					// create a rectangle annotation
-					const rectangle = controller.rectangle({
-						xAnchor: StartX,
-						valueAnchor: StartY,
-						secondXAnchor: EndX,
-						secondValueAnchor: EndY,
-						fill: {opacity: 0},
-						stroke: "2 red"
-						});
-					// disable interactivity for the rectangle annotation
-					rectangle.allowEdit(false);
+					const StartX = Number(document.getElementById("startingXcoordinate").value);
+					const StartY = Number(document.getElementById("startingYcoordinate").value);
+					const EndX = Number(document.getElementById("endingXcoordinate").value);
+					const EndY = Number(document.getElementById("endingYcoordinate").value);
+					if ( (StartX>= EndX) || (StartY>= EndY) )  {
+						alert("Enter valid Values");
+					} 
 					
-					//Calling function to filter data with in the rectangle annotation
-					FindPatentsWithInXYRange(StartX,StartY,EndX,EndY);
+					else {
+						const controller = chart.annotations();					
+						// create a rectangle annotation
+						const rectangle = controller.rectangle({
+							xAnchor: StartX,
+							valueAnchor: StartY,
+							secondXAnchor: EndX,
+							secondValueAnchor: EndY,
+							fill: {opacity: 0},
+							stroke: "2 red"
+							});
+						// disable interactivity for the rectangle annotation
+						rectangle.allowEdit(false);
+						
+						//Calling function to filter data with in the rectangle annotation
+						FindPatentsWithInXYRange(StartX,StartY,EndX,EndY);						
+					}
 				}		
 				
 				// set the container id
@@ -314,11 +320,11 @@
 				return item[6] >= StartX && item[7] >= StartY && item[6] <= EndX && item[7] <= EndY;
 			}
 			
-			let outputdata="Patents under coordinates " + StartX +","+ StartY +" to "+ EndX+","+ EndY+" are:";  
-			
+			let outputdata="Patents under coordinates (" + StartX +","+ StartY +") to ("+ EndX+","+ EndY+") are:";
+		
 			let listofpatents = "";
 			patents.forEach(patent => {
-				listofpatents+="    "+patent[1]+"\n";
+				listofpatents+="    "+patent[1]+"@Category: "+ patent[2] +  "\n";
 			})
 			
 			document.getElementById("patentBOXlist").value+=outputdata+"\n"+listofpatents;
