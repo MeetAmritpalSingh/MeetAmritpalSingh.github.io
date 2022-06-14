@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html>
+ <head>
+  <title>Scatter Chart</title>
+	<script src="Anychart.js"></script>
+	<script src="AnychartScatter.js"></script>
+	<script src="AnychartAnnotations.js"></script>
+	
+  <style>
+	
+	html, body{
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    padding: 0;
+    }
+	
+	#container {
+		width: 45vw;
+		height: 40vw;
+		margin:auto;
+		border: 3px solid black;
+	}
+	
+	.float-container {
+		border: 3px solid #fff;
+		padding: 20px;
+	}
+
+	.float-child {
+		width: 45vw;
+		float: left;
+		padding: 10px;
+	}  
+	
+	textarea {
+		width: 45vw;
+		font-size:15px;
+	}
+	
+	.grid-container {
+	  display: grid;
+	  grid-template-columns: 33% 33% 33%;
+	  background-color: #2196F3;
+	  padding: 10px;
+	}
+	.grid-item {
+	  background-color: rgba(255, 255, 255, 0.8);
+	  border: 1px solid rgba(0, 0, 0, 0.8);
+	  padding: 5px;
+	  font-size: 15px;
+	  text-align: center;
+	}
+	
+	}
+  </style> 
+ </head>
+  <body>
+	
+	<div class="grid-container">
+	  <div class="grid-item">
+		<input type="file" id="uploaded_data" accept=".csv" required><br>
+	  </div>
+	  
+	  <div class="grid-item">
+		<button type="button" id="CreatePlot">Create Scatter Plot</button>
+	  </div>
+	  
+	  <div class="grid-item">
+		<button type="button" id="NewPlot">New</button>
+	  </div>
+	  
+	</div>
+	
+	<div class="float-container">
+		 <div class="float-child">
+			<div id="container"></div>
+		</div>
+		
+		<div class="float-child">
+			<h3>Patents selected by point selection</h3>
+			<textarea  id="patentlist" rows="10" cols="50"></textarea>
+			<br><hr>
+			<h3>Patents selected by drawing bounding box</h3>
+				<table style="width:100%">
+					<tr>
+						<td style="text-align: center">
+							<label for="startingXcoordinate">Starting X Coordinate:</label>
+							<input style="width:40%" type="number" id="startingXcoordinate" name="startingXcoordinate"><br><br>
+						</td>
+						
+						<td style="text-align: center">
+							<label for="startingYcoordinate">Starting Y Coordinate:</label>
+							<input style="width:40%" type="number" id="startingYcoordinate" name="startingYcoordinate"><br><br>
+						</td>
+					</tr>
+					
+					<tr>
+						<td style="text-align: center">
+							<label for="endingXcoordinate">Ending X Coordinate:</label>
+							<input style="width:40%" type="number" id="endingXcoordinate" name="endingXcoordinate"><br><br>
+						</td>
+						<td style="text-align: center">
+							<label for="endingYcoordinate">Ending Y Coordinate:</label>
+							<input style="width:40%" type="number" id="endingYcoordinate" name="endingYcoordinate"><br><br>
+						</td>
+					</tr>
+				</table>	  			  
+				<input id="annotate" type="button" value="Draw"><br><br>
+			<textarea  id="patentBOXlist" rows="10" cols="50"></textarea><br>
+		</div>
+	</div>
+    <script>
+	try{		
+		const dataset = document.getElementById("uploaded_data");
+		const button = document.getElementById("CreatePlot"); 
+		const newbutton = document.getElementById("NewPlot");
+		const Draw = document.getElementById
+		//click event to read a file on clicking "Create Scatter Plot" Button		
+		button.onclick = function(e) {
+		  
+		  //prevent page refreshes
+		  e.preventDefault();
+		  
+		  // Reading data from selected file
+		  const input = dataset.files[0];
+		  
+		  //Object of FileReader class is created
+		  const reader = new FileReader();
+		  
+		  //Read a file only when it is present
+		  if (dataset.value.length>0) {
+			//Reading a file present in input variable
+			reader.readAsText(input);
+		  } else {
+			alert("Please select a file");
+		  }
+		  
+		  
+		  //The load event is fired when a file has been read successfully	
+		  reader.onload = function (e) {
+			//Data read from file is copied to text variable
+			const text = e.target.result;
+			//Calling function for actual processing of data
+			mainFunction(text);      
+		  };	  
+		};
+		
+		const GlobalDatum = []
+		
+		//Central Function that taking data from other defined functions
+		function mainFunction(text){
+			const datum = FormulateData(text);
+			GlobalDatum.push(datum)
+			const Clusters=NumberOfTopics(datum);
+			const SeriesObjects = segregate(datum,Clusters);
+			CreateChart(SeriesObjects,Clusters);
+		}
+		
+		//Function to formulate dataset in 2D array
+		function FormulateData(data) {
+			const datum = data.split("\n").map(row => row.split(","));
+			//Removing first line of CSV file
+			datum.shift();
+			//Removing last element of CSV file
+			datum.pop();
+			
+			//Replacing \r characters in the last column
+			for (let j=0;j <= datum.length-1; j++) {
+				datum[j][datum[j].length-1]=datum[j][datum[j].length-1].replace("\r","") 
+			}
+			return datum;
+		}
+		
+		//Function to find number of Topics
+		function NumberOfTopics(data){
+			const temp=[];
+			//i=1 to ignore header columns
+			for(let i=1; i<=data.length-1; i++) {
+				temp.push(data[i][2]);
+			}
+			//Ignoring duplicate values
+			const unique= [...new Set(temp)];
+			return unique;
+		}	
+		
+		//Function to segregate data according to topics
+		function segregate(MainData,Clusters){
+			//Create Empty list that will store series objects
+			const Series =[]
+			//Check for identified unique cluster in the main data to seperate them out
+			for(i=0;i<Clusters.length;i++){
+				const xTemp=[];
+				for(j=1;j<MainData.length;j++){
+					//identifying each record having unique cluster and keeping data for matching cluster
+					if(MainData[j][2]===Clusters[i]){
+						//create temp variable to store X,Y coordinates of identified record
+						const temp= {
+							"x":MainData[j][6],
+							"value":MainData[j][7]
+						}
+					//Pushing X,Y coordinates of records identified against unique cluster 
+					// in xTemp. Now xTemp will have complete data for one series 
+					xTemp.push(temp)
+					} else {
+						continue;
+					}				
+				}
+				//storing the series data into Series List and iterating to next unique cluster
+				Series.push(xTemp)
+			}
+			return Series
+		}
+
+
+		function CreateChart(chartdata,Clusters){
+	
+			anychart.onDocumentReady(function () {
+				// create a chart
+				const chart = anychart.scatter();
+				
+				// enable legend
+				const legend = chart.legend();
+				legend.enabled(true);
+			
+				//Chart pallete
+				chart.palette(anychart.palettes.default)
+			
+				const SeriesData=[];
+				//Storing all series data in a SeriesData object to create chart data series
+				for(let i=0;i<=chartdata.length-1;i++){
+					SeriesData.push(chart.marker(chartdata[i]).name(Clusters[i]))
+				}
+				
+				// enable title of the chart
+				const title = chart.title();
+				title.enabled(true);
+				
+				//Listening to point click events on each series data point
+				SeriesData.forEach(seriesno => {
+					seriesno.listen('pointClick', function(e){
+					const getX = e.iterator.get('x');
+					const getValue = e.iterator.get('value');
+					//calling Function to fetch patents as per selected coordinate value
+					FetchPatentNumbers(getX,getValue);
+					});
+				});
+						  
+				//Filename as a chart title			
+				const Filename = document.getElementById("uploaded_data").value.split("\\");
+				title.text(Filename[Filename.length-1])
+
+				 // enable major grids
+				chart.xGrid(true);
+				chart.yGrid(true);
+
+				// enable minor grids 
+				chart.xMinorGrid(true);
+				chart.yMinorGrid(true);
+				
+				//Waiting for draq button click event to annoate as per coordinates
+				const DrawButton = document.getElementById("annotate");
+				DrawButton.onclick = function(event) {
+					const StartX = document.getElementById("startingXcoordinate").value;
+					const StartY = document.getElementById("startingYcoordinate").value
+					const EndX = document.getElementById("endingXcoordinate").value;
+					const EndY = document.getElementById("endingYcoordinate").value;
+					const controller = chart.annotations();					
+					// create a rectangle annotation
+					const rectangle = controller.rectangle({
+						xAnchor: StartX,
+						valueAnchor: StartY,
+						secondXAnchor: EndX,
+						secondValueAnchor: EndY,
+						fill: {opacity: 0},
+						stroke: "2 red"
+						});
+					// disable interactivity for the rectangle annotation
+					rectangle.allowEdit(false);
+					
+					//Calling function to filter data with in the rectangle annotation
+					FindPatentsWithInXYRange(StartX,StartY,EndX,EndY);
+				}		
+				
+				// set the container id
+				chart.container("container");
+
+				// initiate drawing the chart
+				chart.draw();
+			})
+		}
+		
+		//Function to identify patent number as per X,Y values
+		function FetchPatentNumbers(X,Value){
+			const patent=GlobalDatum[0].filter(getpatent);
+			
+			function getpatent(item) {
+				return item[6] === X && item[7] === Value;
+			}
+			
+			document.getElementById("patentlist").value+=patent[0][1]+" in category "+patent[0][2]+"\n"
+		}
+		
+		//New button to refresh a page
+		newbutton.onclick = function(e) {
+			location.reload();
+		}
+	
+		function FindPatentsWithInXYRange(StartX,StartY,EndX,EndY){
+	
+			const patents=GlobalDatum[0].filter(getpatentlist);
+			
+			function getpatentlist(item){
+				return item[6] >= StartX && item[7] >= StartY && item[6] <= EndX && item[7] <= EndY;
+			}
+			
+			let outputdata="Patents under coordinates " + StartX +","+ StartY +" to "+ EndX+","+ EndY+" are:";  
+			
+			let listofpatents = "";
+			patents.forEach(patent => {
+				listofpatents+="    "+patent[1]+"\n";
+			})
+			
+			document.getElementById("patentBOXlist").value+=outputdata+"\n"+listofpatents;
+		}
+	}
+	catch(err) {
+		alert("Error occurred - ${err}")
+	}
+    </script>
+  </body>
+</html>
