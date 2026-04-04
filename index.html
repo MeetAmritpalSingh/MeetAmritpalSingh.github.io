@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Workspace Format Converter</title>
+  <link rel="stylesheet" href="convertToWorkspaceFormat.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet" />
+  <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
+</head>
+<body>
+  <div class="wrap">
+    <div class="card">
+      <div class="top-link-wrap">
+        <a
+          class="top-link"
+          href="https://getofficeactiondetails.onrender.com/"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          <span class="top-link-arrow">←</span>
+          <span>Get US Office Actions details</span>
+        </a>
+      </div>
+
+      <h1>Claim Mapping to Workspace Format Converter</h1>
+
+      <p>
+        Upload an Excel file here. It will convert the given Excel into a workspace-friendly
+        format and download the transformed Excel output.
+      </p>
+
+      <div class="excelInput">
+        <input id="fileInput" type="file" accept=".xlsx,.xls" />
+        <button id="processBtn" disabled>Process and Export</button>
+      </div>
+
+      <div id="status" class="status"></div>
+
+      <div class="notes">
+        <strong>Important Notes</strong>
+        <ul>
+          <li>Rows above the first identified data row will be considered as <strong><em>taxonomy nodes</em></strong>.</li>
+          <li>The first data row is detected where <strong>column A</strong> contains patent number format.</li>
+          <li>When claim mappings contain multiple values, they should be separated by <code>|</code>.</li>
+          <li>The first worksheet in the workbook will be used.</li>
+          <li><strong>Do not include columns where text details are needed</strong>, for example, Relevant Text, Additional Claim Limitations, or Others node.</li>
+          <li>There may be a need to adjust and merge headers in the downloaded Excel sheet.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <script src="convertToWorkspaceFormat.js"></script>
+</body>
+</html>
