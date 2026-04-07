@@ -1,212 +1,254 @@
-const fileInput = document.getElementById('fileInput');
-const processBtn = document.getElementById('processBtn');
-const statusEl = document.getElementById('status');
+const fileInput = document.getElementById("fileInput");
+const processBtn = document.getElementById("processBtn");
+const statusEl = document.getElementById("status");
 
 let selectedFile = null;
 
-fileInput.addEventListener('change', () => {
+fileInput.addEventListener("change", () => {
   selectedFile = fileInput.files[0] || null;
   processBtn.disabled = !selectedFile;
-  setStatus(selectedFile ? `Selected file: ${selectedFile.name}` : '', 'info');
+
+  if (selectedFile) {
+    setStatus(`Selected file: ${selectedFile.name}`, "info");
+  } else {
+    clearStatus();
+  }
 });
 
-processBtn.addEventListener('click', async () => {
-  if (!selectedFile) return;
+processBtn.addEventListener("click", async () => {
+  if (!selectedFile) {
+    return;
+  }
 
   try {
-    setStatus('Reading workbook...', 'info');
-    const arrayBuffer = await selectedFile.arrayBuffer();
-    const workbook = XLSX.read(arrayBuffer, { type: 'array' });
+    setStatus("Reading workbook...", "info");
 
-    if (!workbook.SheetNames.length) {
-      throw new Error('No worksheets found in the uploaded workbook.');
+    const buffer = await selectedFile.arrayBuffer();
+    const workbook = XLSX.read(buffer, { type: "array" });
+
+    if (!workbook.SheetNames || workbook.SheetNames.length === 0) {
+      throw new Error("No worksheets found in the uploaded workbook.");
     }
 
     const firstSheetName = workbook.SheetNames[0];
     const sourceSheet = workbook.Sheets[firstSheetName];
+
     const raw = XLSX.utils.sheet_to_json(sourceSheet, {
       header: 1,
       blankrows: false,
-      defval: ''
+      defval: ""
     });
 
     const result = convertToWorkspaceFormat(raw);
 
-    const outWb = XLSX.utils.book_new();
-    const outWs = XLSX.utils.aoa_to_sheet(result);
-    XLSX.utils.book_append_sheet(outWb, outWs, 'Converted');
+    const outputWorkbook = XLSX.utils.book_new();
+    const outputSheet = XLSX.utils.aoa_to_sheet(result);
+
+    XLSX.utils.book_append_sheet(outputWorkbook, outputSheet, "Converted");
 
     const outputName = buildOutputName(selectedFile.name);
-    XLSX.writeFile(outWb, outputName);
-    setStatus(`Done. Exported: ${outputName}`, 'success');
-  } catch (err) {
-    console.error(err);
-    setStatus(`Error: ${err.message}`, 'error');
+    XLSX.writeFile(outputWorkbook, outputName);
+
+    setStatus(`Done. Exported: ${outputName}`, "success");
+  } catch (error) {
+    console.error(error);
+    setStatus(`Error: ${error.message}`, "error");
   }
 });
 
-function setStatus(message, kind) {
+function setStatus(message, type) {
   statusEl.textContent = message;
-  statusEl.className = `status ${kind}`;
+  statusEl.className = `status ${type}`;
+}
+
+function clearStatus() {
+  statusEl.textContent = "";
+  statusEl.className = "status";
 }
 
 function buildOutputName(inputName) {
-  const dot = inputName.lastIndexOf('.');
-  const base = dot >= 0 ? inputName.slice(0, dot) : inputName;
-  return `${base}_workspace_format.xlsx`;
+  const dotIndex = inputName.lastIndexOf(".");
+  const baseName = dotIndex >= 0 ? inputName.slice(0, dotIndex) : inputName;
+  return `${baseName}_workspace_format.xlsx`;
 }
 
-function clean(val) {
-  if (val === null || val === undefined) return '';
-  return String(val).trim();
-}
-
-function hasValue(val) {
-  return clean(val) !== '';
-}
-
-function looksLikeIdentifier(val) {
-  const s = clean(val);
-  if (!s) return false;
-  return /[A-Za-z]/.test(s) && /\d/.test(s);
-}
-
-function splitMappingValues(val) {
-  const s = clean(val);
-  if (!s) return [];
-  return s.split('|').map(part => part.trim()).filter(Boolean);
-}
-
-function forwardFill2D(data, axis) {
-  const out = data.map(row => row.slice());
-
-  if (axis === 'row') {
-    for (let r = 0; r < out.length; r++) {
-      let prev = '';
-      for (let c = 0; c < out[r].length; c++) {
-        const current = clean(out[r][c]);
-        if (current === '') {
-          out[r][c] = prev;
-        } else {
-          prev = current;
-          out[r][c] = current;
-        }
-      }
-    }
+function clean(value) {
+  if (value === null || value === undefined) {
+    return "";
   }
-
-  if (axis === 'col') {
-    if (!out.length) return out;
-    const cols = Math.max(...out.map(r => r.length));
-
-    for (let r = 0; r < out.length; r++) {
-      while (out[r].length < cols) out[r].push('');
-    }
-
-    for (let c = 0; c < cols; c++) {
-      let prev = '';
-      for (let r = 0; r < out.length; r++) {
-        const current = clean(out[r][c]);
-        if (current === '') {
-          out[r][c] = prev;
-        } else {
-          prev = current;
-          out[r][c] = current;
-        }
-      }
-    }
-  }
-
-  return out;
+  return String(value).trim();
 }
 
-function blankRepeatedHeaderCellsExceptLast(df) {
-  const out = df.map(row => row.slice());
-  const lastRow = out.length - 1;
+function hasValue(value) {
+  return clean(value) !== "";
+}
 
-  for (let r = 0; r < out.length; r++) {
-    if (r === lastRow) continue;
-
-    let prev = null;
-    for (let c = 0; c < out[r].length; c++) {
-      const val = clean(out[r][c]);
-      if (c === 0) {
-        prev = val;
-        out[r][c] = val;
-        continue;
-      }
-      if (val === prev) {
-        out[r][c] = '';
-      } else {
-        prev = val;
-        out[r][c] = val;
-      }
-    }
+function looksLikeIdentifier(value) {
+  const text = clean(value);
+  if (!text) {
+    return false;
   }
+  return /[A-Za-z]/.test(text) && /\d/.test(text);
+}
 
-  return out;
+function splitMappingValues(value) {
+  const text = clean(value);
+  if (!text) {
+    return [];
+  }
+  return text
+    .split("|")
+    .map(part => part.trim())
+    .filter(Boolean);
 }
 
 function normalizeRectangular(data) {
-  const cols = Math.max(...data.map(r => r.length));
+  const maxColumns = Math.max(...data.map(row => row.length));
+
   return data.map(row => {
     const copy = row.slice();
-    while (copy.length < cols) copy.push('');
+    while (copy.length < maxColumns) {
+      copy.push("");
+    }
     return copy;
   });
 }
 
-function convertToWorkspaceFormat(raw) {
-  if (!Array.isArray(raw) || !raw.length) {
-    throw new Error('Input sheet is empty.');
+function forwardFill2D(data, axis) {
+  const output = data.map(row => row.slice());
+
+  if (axis === "row") {
+    for (let rowIndex = 0; rowIndex < output.length; rowIndex++) {
+      let previous = "";
+      for (let colIndex = 0; colIndex < output[rowIndex].length; colIndex++) {
+        const current = clean(output[rowIndex][colIndex]);
+        if (current === "") {
+          output[rowIndex][colIndex] = previous;
+        } else {
+          output[rowIndex][colIndex] = current;
+          previous = current;
+        }
+      }
+    }
   }
 
-  raw = normalizeRectangular(raw);
+  if (axis === "col") {
+    if (!output.length) {
+      return output;
+    }
+
+    const maxColumns = Math.max(...output.map(row => row.length));
+
+    for (let rowIndex = 0; rowIndex < output.length; rowIndex++) {
+      while (output[rowIndex].length < maxColumns) {
+        output[rowIndex].push("");
+      }
+    }
+
+    for (let colIndex = 0; colIndex < maxColumns; colIndex++) {
+      let previous = "";
+      for (let rowIndex = 0; rowIndex < output.length; rowIndex++) {
+        const current = clean(output[rowIndex][colIndex]);
+        if (current === "") {
+          output[rowIndex][colIndex] = previous;
+        } else {
+          output[rowIndex][colIndex] = current;
+          previous = current;
+        }
+      }
+    }
+  }
+
+  return output;
+}
+
+function blankRepeatedHeaderCellsExceptLast(headerRows) {
+  const output = headerRows.map(row => row.slice());
+  const lastRowIndex = output.length - 1;
+
+  for (let rowIndex = 0; rowIndex < output.length; rowIndex++) {
+    if (rowIndex === lastRowIndex) {
+      continue;
+    }
+
+    let previous = null;
+
+    for (let colIndex = 0; colIndex < output[rowIndex].length; colIndex++) {
+      const current = clean(output[rowIndex][colIndex]);
+
+      if (colIndex === 0) {
+        output[rowIndex][colIndex] = current;
+        previous = current;
+        continue;
+      }
+
+      if (current === previous) {
+        output[rowIndex][colIndex] = "";
+      } else {
+        output[rowIndex][colIndex] = current;
+        previous = current;
+      }
+    }
+  }
+
+  return output;
+}
+
+function convertToWorkspaceFormat(raw) {
+  if (!Array.isArray(raw) || raw.length === 0) {
+    throw new Error("Input sheet is empty.");
+  }
+
+  const normalizedRaw = normalizeRectangular(raw);
 
   let dataStartRow = null;
-  for (let i = 0; i < raw.length; i++) {
-    if (looksLikeIdentifier(raw[i][0])) {
-      dataStartRow = i;
+  for (let rowIndex = 0; rowIndex < normalizedRaw.length; rowIndex++) {
+    if (looksLikeIdentifier(normalizedRaw[rowIndex][0])) {
+      dataStartRow = rowIndex;
       break;
     }
   }
 
   if (dataStartRow === null) {
-    throw new Error('Could not detect the first data row.');
+    throw new Error("Could not detect the first data row.");
   }
 
-  let header = raw.slice(0, dataStartRow).map(r => r.slice());
-  let body = raw.slice(dataStartRow).map(r => r.slice());
+  let header = normalizedRaw.slice(0, dataStartRow).map(row => row.slice());
+  let body = normalizedRaw.slice(dataStartRow).map(row => row.slice());
 
-  if (!header.length) {
-    throw new Error('No header rows found above the data.');
+  if (header.length === 0) {
+    throw new Error("No header rows found above the data.");
   }
 
-  header = forwardFill2D(header, 'row');
-  header = forwardFill2D(header, 'col');
+  header = forwardFill2D(header, "row");
+  header = forwardFill2D(header, "col");
 
+  const columnCount = normalizedRaw[0].length;
   const columnPaths = [];
-  const colCount = raw[0].length;
 
-  for (let colIdx = 0; colIdx < colCount; colIdx++) {
+  for (let colIndex = 0; colIndex < columnCount; colIndex++) {
     const parts = [];
-    let prev = null;
+    let previous = null;
 
-    for (let rowIdx = 0; rowIdx < header.length; rowIdx++) {
-      const v = clean(header[rowIdx][colIdx]);
-      if (!v) continue;
-      if (v !== prev) parts.push(v);
-      prev = v;
+    for (let rowIndex = 0; rowIndex < header.length; rowIndex++) {
+      const value = clean(header[rowIndex][colIndex]);
+      if (!value) {
+        continue;
+      }
+      if (value !== previous) {
+        parts.push(value);
+      }
+      previous = value;
     }
 
     columnPaths.push(parts);
   }
 
-  const idCol = columnPaths[0];
-  const taxonomyCols = columnPaths.filter((_, i) => i !== 0 && columnPaths[i].length > 0);
+  const idColumnPath = columnPaths[0];
+  const taxonomyColumns = columnPaths.filter((_, index) => index !== 0 && columnPaths[index].length > 0);
 
-  if (!taxonomyCols.length) {
-    throw new Error('No taxonomy columns found.');
+  if (taxonomyColumns.length === 0) {
+    throw new Error("No taxonomy columns found.");
   }
 
   body = body
@@ -217,40 +259,53 @@ function convertToWorkspaceFormat(raw) {
       return copy;
     });
 
-  const mappingSet = new Set();
+  const mappingValueSet = new Set();
+
   for (let colIndex = 1; colIndex < columnPaths.length; colIndex++) {
     for (const row of body) {
-      for (const part of splitMappingValues(row[colIndex])) {
-        mappingSet.add(part);
+      const parts = splitMappingValues(row[colIndex]);
+      for (const part of parts) {
+        mappingValueSet.add(part);
       }
     }
   }
 
-  const mappingValues = Array.from(mappingSet).sort((a, b) => a.localeCompare(b));
+  const mappingValues = Array.from(mappingValueSet).sort((a, b) => a.localeCompare(b));
 
-  if (!mappingValues.length) {
-    throw new Error('No mapping values found in taxonomy cells.');
+  if (mappingValues.length === 0) {
+    throw new Error("No mapping values found in taxonomy cells.");
   }
 
   const expandedPaths = [];
+
   for (let colIndex = 1; colIndex < columnPaths.length; colIndex++) {
     const colPath = columnPaths[colIndex];
-    if (!colPath.length) continue;
+    if (!colPath.length) {
+      continue;
+    }
 
     for (const mappingValue of mappingValues) {
       expandedPaths.push([...colPath, mappingValue]);
     }
   }
 
-  const maxDepth = Math.max(idCol.length, ...expandedPaths.map(p => p.length));
+  const maxDepth = Math.max(
+    idColumnPath.length,
+    ...expandedPaths.map(path => path.length)
+  );
 
-  const paddedIdPath = [...idCol, ...Array(maxDepth - idCol.length).fill('')];
-  const paddedExpandedPaths = expandedPaths.map(p => [
-    ...p,
-    ...Array(maxDepth - p.length).fill('')
+  const paddedIdPath = [
+    ...idColumnPath,
+    ...Array(maxDepth - idColumnPath.length).fill("")
+  ];
+
+  const paddedExpandedPaths = expandedPaths.map(path => [
+    ...path,
+    ...Array(maxDepth - path.length).fill("")
   ]);
 
   const headerRows = [];
+
   for (let level = 0; level < maxDepth; level++) {
     const row = [paddedIdPath[level]];
     for (const path of paddedExpandedPaths) {
@@ -262,19 +317,22 @@ function convertToWorkspaceFormat(raw) {
   const cleanedHeaderRows = blankRepeatedHeaderCellsExceptLast(headerRows);
 
   const resultRows = body.map(row => {
-    const outRow = [row[0]];
+    const outputRow = [row[0]];
 
     for (let colIndex = 1; colIndex < columnPaths.length; colIndex++) {
       const actualValues = new Set(splitMappingValues(row[colIndex]));
       const colPath = columnPaths[colIndex];
-      if (!colPath.length) continue;
+
+      if (!colPath.length) {
+        continue;
+      }
 
       for (const mappingValue of mappingValues) {
-        outRow.push(actualValues.has(mappingValue) ? 'Y' : '');
+        outputRow.push(actualValues.has(mappingValue) ? "Y" : "");
       }
     }
 
-    return outRow;
+    return outputRow;
   });
 
   return [...cleanedHeaderRows, ...resultRows];
